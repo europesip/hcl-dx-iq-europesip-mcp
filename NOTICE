@@ -1,0 +1,14 @@
+EUROPESIP custom MCP Server for HCL DX IQ
+Copyright 2026 EUROPESIP (https://www.europesip.com)
+
+Originally developed by EUROPESIP for the HCL DX Compose labs
+(https://github.com/europesip/hcl-dx-compose-labs) and released as open source under the Apache
+License, Version 2.0 (see LICENSE).
+
+You may use, modify and redistribute it, and contribute improvements. Under section 4(d) of the
+licence, any redistribution or derivative work must keep this NOTICE file and the attribution to
+EUROPESIP as the original author.
+
+This server is not HCL software. The MCP Python SDK, Uvicorn, Python and the base image keep their
+own licences. HCL, Digital Experience and other product names are trademarks of their respective
+owners.

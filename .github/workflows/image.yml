@@ -1,0 +1,82 @@
+# Builds the image, tests it (MCP initialize + tools/list) and publishes it to ghcr.io:
+#   push to main  -> :main and :sha-<commit>
+#   tag v1.2.3    -> :1.2.3, :1.2 and :latest
+#   pull request  -> build and test only
+name: image
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build for the test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: europesip-mcp:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test (speaks MCP the way the IQ Integrator does)
+        run: |
+          docker run -d --name mcp -p 3000:3000 europesip-mcp:test
+          for _ in $(seq 30); do curl -sf http://localhost:3000/probe/ready && break; sleep 1; done
+          H=(-H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream')
+          curl -sSf -X POST http://localhost:3000/mcp "${H[@]}" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}'
+          echo
+          tools=$(curl -sSf -X POST http://localhost:3000/mcp "${H[@]}" -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | jq -r '.result.tools[].name' | sort | tr '\n' ' ')
+          echo "tools: $tools"
+          [ "$tools" = "europesip_echo europesip_faq europesip_services europesip_whoami figma_web_to_dx " ]
+          docker logs mcp
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.title=hcl-dx-iq-europesip-mcp
+            org.opencontainers.image.description=EUROPESIP custom MCP Server for HCL DX IQ
+            org.opencontainers.image.vendor=EUROPESIP
+
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish (amd64 + arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
