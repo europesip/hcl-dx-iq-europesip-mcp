@@ -68,8 +68,10 @@ servers work side by side.
 ## Keep in mind: the HCL system prompt
 
 Your tools do not talk to the LLM on their own. The IQ Integrator puts the HCL system prompt in
-front of every request (about 3,600 tokens in IQ 1.0.2; you can read it in the LiteLLM log), and its
-guardrails apply to your tools too:
+front of every request (about 4,700 tokens in IQ 1.0.3, 3,600 in 1.0.2; you can read it in the
+LiteLLM log), and its guardrails apply to your tools too. **[The HCL DX IQ system prompt](docs/hcl-iq-system-prompt.md)**
+summarises it section by section, with the changes in IQ 1.0.3 and what each one means for your
+tools. The main ones:
 
 - **Request routing: INQUIRY vs ACTION.** The model must classify every request. Questions
   ("What / How / Why / Can I / Is it possible...") are *inquiry*: "answer from DX knowledge, NO
@@ -77,12 +79,16 @@ guardrails apply to your tools too:
   on the live system.
 - **The action mode is written around the HCL tools.** It maps each intent to an HCL tool and, when
   none matches, tells the model to answer "I don't have a tool for [operation]".
-- **The assistant is scoped to HCL DX.** Its identity is a DX assistant, it must not invent
-  features, and its refusals are worded for DX topics.
+- **The assistant is scoped to HCL DX.** Its identity is a DX assistant and it must not invent
+  features. Since IQ 1.0.3 an **off-topic rule** ("non-negotiable") makes it refuse non-DX topics
+  straight away, with a fixed answer.
+- **Answers are written for authors** (since IQ 1.0.3). By default the user is a content author or
+  site manager: no APIs, JSON, IDs or UUIDs unless they ask. Technical data your tool returns will
+  often be hidden or paraphrased.
 - **Every answer is JSON** (`answer` plus `metadata`), which the IQ chat renders. Your tool returns
   plain text; the model puts it into that format.
 
-In our tests the inquiry-style questions of the table above (*"Who is EUROPESIP...?"*, *"What are
+In our tests (IQ 1.0.2 and 1.0.3) the inquiry-style questions of the table above (*"Who is EUROPESIP...?"*, *"What are
 the support hours?"*) did call the custom tools: the model gives priority to a tool whose
 description matches the question. But that is the model weighing your tool against an explicit
 rule in front of it, so the behaviour can change with another model, another IQ version or another

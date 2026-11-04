@@ -68,8 +68,10 @@ HCL: los dos servidores funcionan a la vez.
 ## A tener en cuenta: el system prompt de HCL
 
 Tus herramientas no hablan solas con el LLM. El IQ Integrator pone delante de cada petición el
-system prompt de HCL (unos 3.600 tokens en IQ 1.0.2; se puede leer en el log de LiteLLM), y sus
-salvaguardas (guardrails) también afectan a tus herramientas:
+system prompt de HCL (unos 4.700 tokens en IQ 1.0.3, 3.600 en 1.0.2; se puede leer en el log de
+LiteLLM), y sus salvaguardas (guardrails) también afectan a tus herramientas.
+**[El system prompt de HCL DX IQ](docs/hcl-iq-system-prompt.es.md)** lo resume sección a sección,
+con los cambios de IQ 1.0.3 y lo que implica cada uno para tus herramientas. Las principales:
 
 - **Enrutado de peticiones: INQUIRY frente a ACTION.** El modelo debe clasificar cada petición. Las
   preguntas ("What / How / Why / Can I / Is it possible...") son *inquiry*: "answer from DX
@@ -78,12 +80,16 @@ salvaguardas (guardrails) también afectan a tus herramientas:
 - **El modo action está escrito pensando en las herramientas de HCL.** Asocia cada intención a una
   herramienta de HCL y, si ninguna encaja, indica al modelo que responda "I don't have a tool for
   [operation]".
-- **El asistente está acotado a HCL DX.** Su identidad es la de un asistente de DX, no debe
-  inventar funcionalidades y sus rechazos están redactados para temas de DX.
+- **El asistente está acotado a HCL DX.** Su identidad es la de un asistente de DX y no debe
+  inventar funcionalidades. Desde IQ 1.0.3 una **regla de temas ajenos** ("no negociable") le hace
+  rechazar de inmediato, con una respuesta fija, los temas que no son de DX.
+- **Las respuestas se escriben para autores** (desde IQ 1.0.3). Por defecto el usuario es un autor
+  de contenido o gestor de sitio: sin APIs, JSON, IDs ni UUIDs salvo que los pida. Los datos
+  técnicos que devuelva tu herramienta se ocultarán o se parafrasearán a menudo.
 - **Todas las respuestas son JSON** (`answer` más `metadata`), que el chat de IQ presenta. Tu
   herramienta devuelve texto normal; el modelo lo pone en ese formato.
 
-En nuestras pruebas, las preguntas de tipo inquiry de la tabla anterior (*"¿Quién es
+En nuestras pruebas (IQ 1.0.2 y 1.0.3), las preguntas de tipo inquiry de la tabla anterior (*"¿Quién es
 EUROPESIP...?"*, *"¿Cuál es el horario de soporte?"*) sí llamaron a las herramientas propias: el
 modelo da prioridad a una herramienta cuya descripción encaja con la pregunta. Pero es el modelo
 sopesando tu herramienta frente a una regla explícita que tiene delante, así que el comportamiento
