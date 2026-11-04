@@ -65,6 +65,39 @@ Ask them in the IQ chat, in English or in your language (IQ translates the answe
 Questions about DX itself ("Which WCM libraries are there?") still go to the HCL MCP Server: both
 servers work side by side.
 
+## Keep in mind: the HCL system prompt
+
+Your tools do not talk to the LLM on their own. The IQ Integrator puts the HCL system prompt in
+front of every request (about 3,600 tokens in IQ 1.0.2; you can read it in the LiteLLM log), and its
+guardrails apply to your tools too:
+
+- **Request routing: INQUIRY vs ACTION.** The model must classify every request. Questions
+  ("What / How / Why / Can I / Is it possible...") are *inquiry*: "answer from DX knowledge, NO
+  tools". Commands ("List / Show / Create / Get / Update / Delete...") are *action*: use the tools
+  on the live system.
+- **The action mode is written around the HCL tools.** It maps each intent to an HCL tool and, when
+  none matches, tells the model to answer "I don't have a tool for [operation]".
+- **The assistant is scoped to HCL DX.** Its identity is a DX assistant, it must not invent
+  features, and its refusals are worded for DX topics.
+- **Every answer is JSON** (`answer` plus `metadata`), which the IQ chat renders. Your tool returns
+  plain text; the model puts it into that format.
+
+In our tests the inquiry-style questions of the table above (*"Who is EUROPESIP...?"*, *"What are
+the support hours?"*) did call the custom tools: the model gives priority to a tool whose
+description matches the question. But that is the model weighing your tool against an explicit
+rule in front of it, so the behaviour can change with another model, another IQ version or another
+wording, and the model could answer from its own knowledge, or make something up, instead of
+calling your tool. To reduce the risk:
+
+- Say in the description when to use the tool, questions included: "Use it when the user asks
+  ...". The example tools do.
+- Test every tool both ways, as a question and as a command (*"What are the support hours?"* /
+  *"Show the support hours"*), and repeat the tests after every IQ upgrade or model change.
+- Expect more refusals the further a tool is from DX: present it as part of the portal (your
+  company, your services, your content) rather than as a general-purpose assistant.
+- End what the tool returns with an instruction to use only that information, as the example tools
+  do, so the answer comes from your data.
+
 ## Build your own server from this skeleton
 
 1. **Write your tool**: a Python function with `@mcp.tool()`. The SDK builds the tool from it:
@@ -101,8 +134,13 @@ servers work side by side.
   only gets what they are allowed to see.
 - **Your business systems.** Tools that call your CRM, your ticketing system or your ERP: "open a
   support ticket", "what is the status of my order".
-- **Actions in DX as the user.** Create a draft WCM content, search DAM, list pages... always with
-  the permissions of the user asking, never with an administrative account.
+- **Your own DX operations, not the generic ones.** The HCL MCP Server already gives IQ more than
+  50 tools for the generic DX operations (list libraries and pages, search content and DAM assets,
+  create or update WCM content, site areas, projects and pages...): do not duplicate them. A custom
+  tool makes sense for operations specific to your organisation, which combine several steps or
+  your own rules: for example "publish a news item" with your template, site area, categories and
+  approval in one step, or a check of your editorial rules before publishing. Always with the
+  permissions of the user asking (like `europesip_whoami`), never with an administrative account.
 - **RAG: add knowledge, not only data.** A `search_knowledge(query)` tool that runs a semantic
   search over your documents (manuals, procedures, product sheets) and returns the most relevant
   passages for IQ to answer with. For example: embeddings computed through the LiteLLM that IQ

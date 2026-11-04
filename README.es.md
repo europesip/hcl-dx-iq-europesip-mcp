@@ -65,6 +65,42 @@ Lánzalas en el chat de IQ, en español o en inglés (IQ traduce las respuestas)
 Las preguntas sobre el propio DX ("¿Qué bibliotecas de WCM hay?") siguen yendo al MCP Server de
 HCL: los dos servidores funcionan a la vez.
 
+## A tener en cuenta: el system prompt de HCL
+
+Tus herramientas no hablan solas con el LLM. El IQ Integrator pone delante de cada petición el
+system prompt de HCL (unos 3.600 tokens en IQ 1.0.2; se puede leer en el log de LiteLLM), y sus
+salvaguardas (guardrails) también afectan a tus herramientas:
+
+- **Enrutado de peticiones: INQUIRY frente a ACTION.** El modelo debe clasificar cada petición. Las
+  preguntas ("What / How / Why / Can I / Is it possible...") son *inquiry*: "answer from DX
+  knowledge, NO tools". Las órdenes ("List / Show / Create / Get / Update / Delete...") son
+  *action*: usar las herramientas sobre el sistema real.
+- **El modo action está escrito pensando en las herramientas de HCL.** Asocia cada intención a una
+  herramienta de HCL y, si ninguna encaja, indica al modelo que responda "I don't have a tool for
+  [operation]".
+- **El asistente está acotado a HCL DX.** Su identidad es la de un asistente de DX, no debe
+  inventar funcionalidades y sus rechazos están redactados para temas de DX.
+- **Todas las respuestas son JSON** (`answer` más `metadata`), que el chat de IQ presenta. Tu
+  herramienta devuelve texto normal; el modelo lo pone en ese formato.
+
+En nuestras pruebas, las preguntas de tipo inquiry de la tabla anterior (*"¿Quién es
+EUROPESIP...?"*, *"¿Cuál es el horario de soporte?"*) sí llamaron a las herramientas propias: el
+modelo da prioridad a una herramienta cuya descripción encaja con la pregunta. Pero es el modelo
+sopesando tu herramienta frente a una regla explícita que tiene delante, así que el comportamiento
+puede cambiar con otro modelo, otra versión de IQ u otra forma de preguntar, y el modelo podría
+responder con su propio conocimiento, o inventarse algo, en lugar de llamar a tu herramienta. Para
+reducir el riesgo:
+
+- Indica en la descripción cuándo usar la herramienta, preguntas incluidas: "Use it when the user
+  asks ...". Las herramientas de ejemplo lo hacen.
+- Prueba cada herramienta de las dos formas, como pregunta y como orden (*"¿Cuál es el horario de
+  soporte?"* / *"Muestra el horario de soporte"*), y repite las pruebas tras cada actualización de
+  IQ o cambio de modelo.
+- Cuenta con más rechazos cuanto más lejos de DX esté una herramienta: preséntala como parte del
+  portal (tu empresa, tus servicios, tu contenido) y no como un asistente de propósito general.
+- Termina lo que devuelve la herramienta con una instrucción de usar solo esa información, como
+  hacen las herramientas de ejemplo, para que la respuesta salga de tus datos.
+
 ## Construir tu propio servidor a partir de este esqueleto
 
 1. **Escribe tu herramienta**: una función de Python con `@mcp.tool()`. El SDK construye la
@@ -104,8 +140,14 @@ HCL: los dos servidores funcionan a la vez.
   DX, y cada usuario solo recibe lo que tiene permitido ver.
 - **Tus sistemas de negocio.** Herramientas que llamen a tu CRM, a tu sistema de tickets o a tu
   ERP: "abre un ticket de soporte", "en qué estado está mi pedido".
-- **Acciones en DX como el usuario.** Crear un borrador de contenido de WCM, buscar en DAM, listar
-  páginas... siempre con los permisos del usuario que pregunta, nunca con una cuenta administrativa.
+- **Operaciones de DX propias, no las genéricas.** El MCP Server de HCL ya le da a IQ más de 50
+  herramientas para las operaciones genéricas de DX (listar bibliotecas y páginas, buscar contenido
+  y activos de DAM, crear o actualizar contenido de WCM, áreas de sitio, proyectos y páginas...): no
+  las dupliques. Una herramienta propia tiene sentido para operaciones específicas de tu
+  organización, que combinan varios pasos o tus propias reglas: por ejemplo "publicar una noticia"
+  con tu plantilla, área de sitio, categorías y aprobación en un solo paso, o comprobar tus normas
+  editoriales antes de publicar. Siempre con los permisos del usuario que pregunta (como
+  `europesip_whoami`), nunca con una cuenta administrativa.
 - **RAG: añadir conocimiento, no solo datos.** Una herramienta `search_knowledge(query)` que haga
   una búsqueda semántica en tus documentos (manuales, procedimientos, fichas de producto) y
   devuelva los fragmentos más relevantes para que IQ responda con ellos. Por ejemplo: embeddings
