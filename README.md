@@ -167,7 +167,7 @@ calling your tool. To reduce the risk:
 ## Image
 
 ```bash
-docker pull ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.1
+docker pull ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.2
 ```
 
 amd64 and arm64, non-root user, port 3000. [GitHub Actions](.github/workflows/image.yml) builds it
@@ -198,7 +198,7 @@ The labs deploy it with
 ## Try it locally
 
 ```bash
-docker run --rm -p 3000:3000 ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.1
+docker run --rm -p 3000:3000 ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.2
 ```
 
 ```bash

@@ -176,7 +176,7 @@ reducir el riesgo:
 ## Imagen
 
 ```bash
-docker pull ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.1
+docker pull ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.2
 ```
 
 amd64 y arm64, usuario no root, puerto 3000. [GitHub Actions](.github/workflows/image.yml) la
@@ -208,7 +208,7 @@ Los labs lo despliegan con
 ## Probarlo en local
 
 ```bash
-docker run --rm -p 3000:3000 ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.1
+docker run --rm -p 3000:3000 ghcr.io/europesip/hcl-dx-iq-europesip-mcp:1.0.2
 ```
 
 ```bash
