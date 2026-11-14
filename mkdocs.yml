@@ -1,0 +1,25 @@
+# TechDocs of the EUROPESIP custom MCP Server for HCL DX IQ: the docs/ folder, shown in the EUROPESIP Internal Developer
+# Portal (Backstage) through the annotation backstage.io/techdocs-ref of catalog-info.yaml. Build locally (same as
+# Backstage):
+#   pip install mkdocs-techdocs-core==1.7.1 && mkdocs serve
+site_name: EUROPESIP custom MCP Server for HCL DX IQ
+site_description: A skeleton to build your own MCP Server and extend HCL DX IQ with your own tools (not HCL software)
+repo_url: https://github.com/europesip/hcl-dx-iq-europesip-mcp
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+plugins:
+  - techdocs-core
+
+nav:
+  - Overview: index.md
+  - The HCL DX IQ system prompt: hcl-iq-system-prompt.md
+  - Español:
+      - Introducción: index.es.md
+      - El system prompt de HCL DX IQ: hcl-iq-system-prompt.es.md
+
+# Heading anchors as GitHub makes them (accents kept: #cómo-ver-el-prompt-completo), so the same links work on GitHub
+# and here
+markdown_extensions:
+  - toc:
+      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
